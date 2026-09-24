@@ -6,6 +6,36 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
   "https://api-proxy-157704882598.us-east1.run.app";
 const RESULT_LIMIT = 8;
+const COMPANY_CACHE_KEY = "finscope:companies:v1";
+const COMPANY_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const REQUEST_TIMEOUT_MS = 15_000;
+
+function readCompanyCache() {
+  try {
+    const cached = JSON.parse(localStorage.getItem(COMPANY_CACHE_KEY));
+    if (
+      Array.isArray(cached?.companies) &&
+      Date.now() - cached.savedAt < COMPANY_CACHE_TTL_MS
+    ) {
+      return cached.companies;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function writeCompanyCache(companies) {
+  try {
+    localStorage.setItem(
+      COMPANY_CACHE_KEY,
+      JSON.stringify({ companies, savedAt: Date.now() }),
+    );
+  } catch {
+    // Searching should still work if storage is unavailable or full.
+  }
+}
 
 function getMatchRank(company, normalizedQuery) {
   const symbol = company["Symbol"]?.toLowerCase() || "";
@@ -30,15 +60,35 @@ export default function CompanySearch() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const searchContainerRef = useRef(null);
-  const hasFetchedCompanies = useRef(false);
 
   useEffect(() => {
-    if (hasFetchedCompanies.current) return;
-    hasFetchedCompanies.current = true;
+    const cachedCompanies = readCompanyCache();
+
+    if (cachedCompanies) {
+      const cacheFrameId = window.requestAnimationFrame(() => {
+        setCompanies(cachedCompanies);
+        setIsLoading(false);
+      });
+      return () => window.cancelAnimationFrame(cacheFrameId);
+    }
+
+    const controller = new AbortController();
+    let disposed = false;
+    let didTimeOut = false;
+    const timeoutId = window.setTimeout(
+      () => {
+        didTimeOut = true;
+        controller.abort();
+      },
+      REQUEST_TIMEOUT_MS,
+    );
 
     async function fetchCompanies() {
       try {
-        const response = await fetch(`${API_BASE_URL}/companies`);
+        const response = await fetch(`${API_BASE_URL}/companies`, {
+          cache: "force-cache",
+          signal: controller.signal,
+        });
 
         if (!response.ok) {
           throw new Error(`Companies request failed with ${response.status}`);
@@ -51,15 +101,32 @@ export default function CompanySearch() {
         }
 
         setCompanies(data.companies);
+        writeCompanyCache(data.companies);
       } catch (fetchError) {
+        if (disposed) return;
+
+        if (fetchError.name === "AbortError" && didTimeOut) {
+          setError(
+            "The company directory took too long to load. Please refresh and try again.",
+          );
+          return;
+        }
+
         console.error("Unable to fetch companies:", fetchError);
         setError("Unable to load companies. Please try again.");
       } finally {
-        setIsLoading(false);
+        window.clearTimeout(timeoutId);
+        if (!disposed) setIsLoading(false);
       }
     }
 
     fetchCompanies();
+
+    return () => {
+      disposed = true;
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
   }, []);
 
   useEffect(() => {
