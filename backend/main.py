@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 import pandas as pd
 import os
+from fastapi.middleware.cors import CORSMiddleware
 
 import requests
 
@@ -26,6 +27,14 @@ from upstox_service import(
 
 
 app = FastAPI(title="NIFTY 500 Companies API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 CSV_FILE = "nifty500_raw.csv"
 
