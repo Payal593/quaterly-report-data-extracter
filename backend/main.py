@@ -1,28 +1,12 @@
-from fastapi import FastAPI, HTTPException
-import pandas as pd
-import os
+import csv
+from functools import lru_cache
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-import requests
 
 GCS_BUCKET_NAME = "stockrawdata"
-from yahoo_service import get_market_data
-from save_bucket import (
-    gcs_file_exists,
-    get_json_from_gcs,
-    save_json_to_gcs
-)
-from upstox_service import(
-    get_profile,
-    get_balance_sheet,
-    get_cash_flow,
-    get_income_statement,
-    get_share_holdings,
-    get_key_ratios,
-    get_corporate_actions,
-    get_competitors,
-    get_ohlc
-)
 
 
 
@@ -36,27 +20,33 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-CSV_FILE = "nifty500_raw.csv"
+CSV_FILE = Path(__file__).with_name("nifty500_raw.csv")
+
+
+@lru_cache(maxsize=1)
+def load_companies():
+    """Load the small, static company directory only once per worker."""
+    with CSV_FILE.open(encoding="utf-8-sig", newline="") as csv_file:
+        return tuple(csv.DictReader(csv_file))
 
 ##############################################################################
 
 @app.get("/companies")
-def get_companies():
-    if not os.path.exists(CSV_FILE):
+def get_companies(response: Response):
+    if not CSV_FILE.exists():
         raise HTTPException(
             status_code=404,
             detail=f"{CSV_FILE} not found"
         )
 
     try:
-        df = pd.read_csv(CSV_FILE)
-
-        # Convert NaN values to None so JSON is valid
-        df = df.where(pd.notnull(df), None)
+        companies = load_companies()
+        # The directory changes only when a new backend image is deployed.
+        response.headers["Cache-Control"] = "public, max-age=86400, stale-while-revalidate=604800"
 
         return {
-            "count": len(df),
-            "companies": df.to_dict(orient="records")
+            "count": len(companies),
+            "companies": companies
         }
 
     except Exception as e:
@@ -81,6 +71,8 @@ def get_health():
 def profile(isin: str):
 
     try:
+        from upstox_service import get_profile
+
         return get_profile(
             isin=isin,
             bucket_name=GCS_BUCKET_NAME
@@ -96,6 +88,8 @@ def profile(isin: str):
 def balance_sheet(isin: str):
 
     try:
+        from upstox_service import get_balance_sheet
+
         return get_balance_sheet(
             isin=isin,
             bucket_name=GCS_BUCKET_NAME
@@ -112,6 +106,8 @@ def balance_sheet(isin: str):
 def cash_flow(isin: str):
 
     try:
+        from upstox_service import get_cash_flow
+
         return get_cash_flow(
             isin=isin,
             bucket_name=GCS_BUCKET_NAME
@@ -127,6 +123,8 @@ def cash_flow(isin: str):
 def income_statement(isin: str):
 
     try:
+        from upstox_service import get_income_statement
+
         return get_income_statement(
             isin=isin,
             bucket_name=GCS_BUCKET_NAME
@@ -142,6 +140,8 @@ def income_statement(isin: str):
 def share_holdings(isin: str):
 
     try:
+        from upstox_service import get_share_holdings
+
         return get_share_holdings(
             isin=isin,
             bucket_name=GCS_BUCKET_NAME
@@ -157,6 +157,8 @@ def share_holdings(isin: str):
 def key_ratios(isin: str):
 
     try:
+        from upstox_service import get_key_ratios
+
         return get_key_ratios(
             isin=isin,
             bucket_name=GCS_BUCKET_NAME
@@ -173,6 +175,8 @@ def key_ratios(isin: str):
 def corporate_actions(isin: str):
 
     try:
+        from upstox_service import get_corporate_actions
+
         return get_corporate_actions(
             isin=isin,
             bucket_name=GCS_BUCKET_NAME
@@ -189,6 +193,8 @@ def corporate_actions(isin: str):
 def competitors(isin: str):
 
     try:
+        from upstox_service import get_competitors
+
         return get_competitors(
             isin=isin,
             bucket_name=GCS_BUCKET_NAME
@@ -209,6 +215,7 @@ def competitors(isin: str):
 def market_new(isin: str):
 
     try:
+        from yahoo_service import get_market_data
 
         return get_market_data(
             isin=isin,
@@ -226,6 +233,8 @@ def market_new(isin: str):
 @app.get("/market/{isin}")
 def market(isin: str):
     try:
+        from yahoo_service import get_market_data
+
         return get_market_data(isin,"stockrawdata")
 
     except Exception as e:
@@ -242,6 +251,17 @@ def market(isin: str):
 def get_data(isin: str):
 
     try:
+        from upstox_service import (
+            get_balance_sheet,
+            get_cash_flow,
+            get_competitors,
+            get_corporate_actions,
+            get_income_statement,
+            get_key_ratios,
+            get_profile,
+            get_share_holdings,
+        )
+        from yahoo_service import get_market_data
 
         profile = get_profile(
             isin,
