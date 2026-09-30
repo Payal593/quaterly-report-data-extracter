@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export default function Navbar() {
+export default function Navbar({ activePage = "home" }) {
   return (
     <header className="navbar">
       <Link className="brand" href="/" aria-label="FinScope home">
@@ -9,7 +9,12 @@ export default function Navbar() {
       </Link>
 
       <nav aria-label="Main navigation">
-        <Link className="nav-link nav-link--active" href="/">Home</Link>
+        <Link
+          className={`nav-link ${activePage === "home" ? "nav-link--active" : ""}`}
+          href="/"
+        >
+          Home
+        </Link>
         <a className="nav-link" href="#companies">Companies</a>
         <a className="nav-link" href="#about">About</a>
       </nav>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
@@ -53,6 +54,7 @@ function getMatchRank(company, normalizedQuery) {
 }
 
 export default function CompanySearch() {
+  const router = useRouter();
   const [companies, setCompanies] = useState([]);
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -178,6 +180,10 @@ export default function CompanySearch() {
 
     console.log("Selected company:", company);
     console.log("Selected ISIN:", selectedIsin);
+
+    if (selectedIsin) {
+      router.push(`/company/${encodeURIComponent(selectedIsin)}`);
+    }
   }
 
   function handleKeyDown(event) {
