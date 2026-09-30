@@ -8,7 +8,22 @@ from fastapi.middleware.cors import CORSMiddleware
 
 GCS_BUCKET_NAME = "stockrawdata"
 
+import math
+def clean_nan(data):
+    if isinstance(data, dict):
+        return {
+            key: clean_nan(value)
+            for key, value in data.items()
+        }
 
+    elif isinstance(data, list):
+        return [clean_nan(item) for item in data]
+
+    elif isinstance(data, float):
+        if not math.isfinite(data):
+            return None
+
+    return data
 
 app = FastAPI(title="NIFTY 500 Companies API")
 
@@ -307,7 +322,7 @@ def get_data(isin: str):
             GCS_BUCKET_NAME
         )
 
-        return {
+        response =  {
             "isin": isin,
             "profile": profile,
             "balance_sheet": balance_sheet,
@@ -319,6 +334,7 @@ def get_data(isin: str):
             "competitors": competitors,
             "marketdata": marketdata
         }
+        return clean_nan(response)
 
     except Exception as e:
 
