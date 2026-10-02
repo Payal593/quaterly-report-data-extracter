@@ -322,7 +322,8 @@ def get_data(isin: str):
         )
         marketdata=get_market_data(
             isin,
-            GCS_BUCKET_NAME
+            GCS_BUCKET_NAME,
+            force_refresh=True
         )
 
         response =  {
