@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const API_BASE_URL =
@@ -53,8 +53,9 @@ function getMatchRank(company, normalizedQuery) {
   return -1;
 }
 
-export default function CompanySearch() {
+export default function CompanySearch({ variant = "hero" }) {
   const router = useRouter();
+  const suggestionsId = useId();
   const [companies, setCompanies] = useState([]);
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -174,7 +175,7 @@ export default function CompanySearch() {
   function selectCompany(company) {
     const selectedIsin = company["ISIN Code"];
 
-    setQuery(company["Company Name"]);
+    setQuery(variant === "navbar" ? "" : company["Company Name"]);
     setIsOpen(false);
     setActiveIndex(-1);
 
@@ -219,7 +220,10 @@ export default function CompanySearch() {
   const showDropdown = isOpen && hasQuery && !isLoading && !error;
 
   return (
-    <div className="company-search" ref={searchContainerRef}>
+    <div
+      className={`company-search company-search--${variant}`}
+      ref={searchContainerRef}
+    >
       <div className="search-box">
         <svg className="search-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <circle cx="11" cy="11" r="6.5" />
@@ -231,7 +235,7 @@ export default function CompanySearch() {
             activeIndex >= 0 ? `company-option-${activeIndex}` : undefined
           }
           aria-autocomplete="list"
-          aria-controls="company-suggestions"
+          aria-controls={suggestionsId}
           aria-expanded={showDropdown}
           autoComplete="off"
           disabled={isLoading || Boolean(error)}
@@ -241,7 +245,11 @@ export default function CompanySearch() {
           placeholder={
             isLoading
               ? "Loading companies..."
-              : "Search company name, symbol or ISIN..."
+              : error
+                ? "Company search unavailable"
+              : variant === "navbar"
+                ? "Search another company..."
+                : "Search company name, symbol or ISIN..."
           }
           role="combobox"
           type="search"
@@ -251,7 +259,7 @@ export default function CompanySearch() {
       </div>
 
       {showDropdown && (
-        <div className="suggestions" id="company-suggestions" role="listbox">
+        <div className="suggestions" id={suggestionsId} role="listbox">
           {results.length > 0 ? (
             results.map((company, index) => (
               <button

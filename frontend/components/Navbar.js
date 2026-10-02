@@ -1,23 +1,82 @@
-import Link from "next/link";
+"use client";
 
-export default function Navbar({ activePage = "home" }) {
+import Link from "next/link";
+import { useState } from "react";
+import { usePathname } from "next/navigation";
+import CompanySearch from "@/components/CompanySearch";
+
+const navItems = [
+  { href: "/", label: "Home" },
+  { href: "/companies", label: "Companies" },
+  { href: "/about", label: "About" },
+];
+
+function isActivePath(pathname, href) {
+  if (href === "/") return pathname === "/";
+  if (href === "/companies") {
+    return pathname.startsWith("/companies") || pathname.startsWith("/company/");
+  }
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+export default function Navbar({ showSearch = false }) {
+  const pathname = usePathname();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   return (
     <header className="navbar">
-      <Link className="brand" href="/" aria-label="FinScope home">
-        <span className="brand__mark" aria-hidden="true">F</span>
-        <span>FinScope</span>
-      </Link>
-
-      <nav aria-label="Main navigation">
+      <div className="navbar__main">
         <Link
-          className={`nav-link ${activePage === "home" ? "nav-link--active" : ""}`}
+          aria-label="FinScope home"
+          className="brand"
           href="/"
+          onClick={() => setIsMenuOpen(false)}
         >
-          Home
+          <span className="brand__mark" aria-hidden="true">F</span>
+          <span>FinScope</span>
         </Link>
-        <a className="nav-link" href="#companies">Companies</a>
-        <a className="nav-link" href="#about">About</a>
-      </nav>
+
+        {showSearch && (
+          <div className="navbar__search">
+            <CompanySearch variant="navbar" />
+          </div>
+        )}
+
+        <button
+          aria-controls="main-navigation"
+          aria-expanded={isMenuOpen}
+          aria-label={isMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+          className={`menu-toggle ${isMenuOpen ? "menu-toggle--open" : ""}`}
+          onClick={() => setIsMenuOpen((current) => !current)}
+          type="button"
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+
+        <nav
+          aria-label="Main navigation"
+          className={isMenuOpen ? "navbar__nav--open" : ""}
+          id="main-navigation"
+        >
+          {navItems.map((item) => {
+            const isActive = isActivePath(pathname, item.href);
+
+            return (
+              <Link
+                aria-current={isActive ? "page" : undefined}
+                className={`nav-link ${isActive ? "nav-link--active" : ""}`}
+                href={item.href}
+                key={item.href}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
     </header>
   );
 }
