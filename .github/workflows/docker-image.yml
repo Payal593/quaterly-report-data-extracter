@@ -43,5 +43,5 @@ jobs:
         run: |
           gcloud run deploy api-proxy \
             --image docker.io/sentdexcloud9/api-proxy:latest \
-            --region YOUR_REGION \
+            --region us-east1 \
             --platform managed
