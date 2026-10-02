@@ -342,3 +342,105 @@ def get_data(isin: str):
             status_code=500,
             detail=str(e)
         )
+
+
+##################################################################################################################################
+
+def get_news(company_name, from_date, to_date):
+
+    # Google News before: is exclusive.
+    # Add one day so to_date is included.
+    to_date_obj = datetime.strptime(to_date, "%Y-%m-%d")
+    before_date = (to_date_obj + timedelta(days=1)).strftime("%Y-%m-%d")
+
+    query = (
+        f'"{company_name}" '
+        f'after:{from_date} '
+        f'before:{before_date}'
+    )
+
+    url = (
+        "https://news.google.com/rss/search?"
+        f"q={quote(query)}"
+        "&hl=en-IN"
+        "&gl=IN"
+        "&ceid=IN:en"
+    )
+
+    response = requests.get(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0"
+        },
+        timeout=30
+    )
+
+    response.raise_for_status()
+
+    feed = feedparser.parse(response.content)
+
+    results = []
+
+    for item in feed.entries:
+
+        source = ""
+
+        if "source" in item:
+            source = item.source.get("title", "")
+
+        results.append({
+            "date": item.get("published", ""),
+            "title": item.get("title", ""),
+            "source": source,
+            "summary": item.get("summary", ""),
+            "link": item.get("link", "")
+        })
+
+    return results
+
+
+@app.get("/founder-news")
+def news(
+    company_name: str = Query(..., description="Company name"),
+    from_date: str = Query(..., description="Start date YYYY-MM-DD"),
+    to_date: str = Query(..., description="End date YYYY-MM-DD")
+):
+
+    # Validate dates
+    try:
+        start = datetime.strptime(from_date, "%Y-%m-%d")
+        end = datetime.strptime(to_date, "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail="Dates must be in YYYY-MM-DD format"
+        )
+
+    if start > end:
+        raise HTTPException(
+            status_code=400,
+            detail="from_date cannot be after to_date"
+        )
+
+    try:
+        articles = get_news(
+            company_name,
+            from_date,
+            to_date
+        )
+
+        return {
+            "company": company_name,
+            "from_date": from_date,
+            "to_date": to_date,
+            "count": len(articles),
+            "articles": articles
+        }
+
+    except requests.RequestException as e:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Google News request failed: {str(e)}"
+        )
+
+
