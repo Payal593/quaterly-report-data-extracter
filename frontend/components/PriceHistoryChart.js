@@ -228,8 +228,6 @@ export default function PriceHistoryChart({ dailyData }) {
               dataKey="timestamp"
               domain={["dataMin", "dataMax"]}
               minTickGap={42}
-              padding={{ left: 8, right: 8 }}
-              scale="time"
               tickFormatter={(timestamp) =>
                 selectedRange === "1M"
                   ? shortAxisDateFormatter.format(new Date(timestamp))
@@ -243,7 +241,7 @@ export default function PriceHistoryChart({ dailyData }) {
               hide={!enabledSeries.volume}
               tickFormatter={formatVolume}
               tickLine={false}
-              width={44}
+              width={50}
               yAxisId="volume"
             />
             <YAxis
@@ -257,7 +255,7 @@ export default function PriceHistoryChart({ dailyData }) {
               orientation="right"
               tickFormatter={(value) => `₹${compactNumberFormatter.format(value)}`}
               tickLine={false}
-              width={52}
+              width={58}
               yAxisId="price"
             />
             <Tooltip

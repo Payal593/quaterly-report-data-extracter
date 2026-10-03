@@ -319,7 +319,7 @@ export default function CompanyPage() {
             </section>
 
             <section
-              className="financial-section company-data-section price-history-section"
+              className="financial-section company-data-section"
               id="price-history"
               aria-labelledby="price-history-title"
             >

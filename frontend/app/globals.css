@@ -886,17 +886,12 @@ h1 {
   letter-spacing: -0.6px;
 }
 .price-chart-panel {
-  padding: 20px 22px 18px;
+  padding: 18px 18px 16px;
   overflow: hidden;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: 0 5px 18px rgba(24, 42, 68, 0.035);
-}
-.price-history-section {
-  width: min(1440px, calc(100vw - 48px));
-  margin-left: 50%;
-  transform: translateX(-50%);
 }
 .price-chart-ranges {
   display: flex;
@@ -923,7 +918,7 @@ h1 {
   color: var(--accent-dark);
   border-bottom-color: var(--accent);
 }
-.price-chart-canvas { width: 100%; height: 500px; margin-top: 18px; }
+.price-chart-canvas { width: 100%; height: 420px; margin-top: 18px; }
 .price-chart-canvas .recharts-cartesian-axis-tick-value {
   fill: #7a8799;
   font-size: 11px;
@@ -1249,13 +1244,8 @@ h1 {
   .metric-card { min-height: 116px; padding: 18px; }
   .financial-section { padding-top: 46px; }
   .financial-section__heading { align-items: flex-start; flex-direction: column; gap: 13px; }
-  .price-history-section {
-    width: 100%;
-    margin-left: 0;
-    transform: none;
-  }
-  .price-chart-panel { padding: 13px 8px 14px; }
-  .price-chart-canvas { height: 360px; margin-top: 14px; }
+  .price-chart-panel { padding: 13px 10px 14px; }
+  .price-chart-canvas { height: 330px; margin-top: 14px; }
   .price-chart-ranges button { min-width: 50px; padding-right: 11px; padding-left: 11px; }
   .price-chart-series { justify-content: flex-start; gap: 15px; }
   .price-chart-tooltip { min-width: 152px; padding: 9px 10px; }
