@@ -76,9 +76,8 @@ export default function Navbar({ showSearch = false }) {
               </Link>
             );
           })}
+          <ThemeToggle />
         </nav>
-
-        <ThemeToggle />
       </div>
     </header>
   );

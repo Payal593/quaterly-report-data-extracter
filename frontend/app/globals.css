@@ -218,6 +218,7 @@ button, input { font: inherit; }
 .theme-toggle:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 25%, transparent); outline-offset: 2px; }
 .theme-toggle__icon { width: 19px; height: 19px; }
 .theme-toggle__icon svg { width: 100%; height: 100%; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.theme-toggle__label { display: none; }
 .theme-toggle__icon--moon { display: none; }
 [data-theme="dark"] .theme-toggle__icon--sun { display: none; }
 [data-theme="dark"] .theme-toggle__icon--moon { display: block; }
@@ -453,7 +454,7 @@ h1 {
 }
 .research-highlights__bars span {
   width: 28px;
-  background: var(--accent-soft);
+  background: #cbdcf4;
   border-radius: 6px;
 }
 .research-highlights__bars span:nth-child(1) { height: 28px; }
@@ -1840,6 +1841,27 @@ h1 {
     gap: 3px;
   }
   .navbar nav.navbar__nav--open { display: flex; }
+  .navbar nav .theme-toggle {
+    width: 100%;
+    height: auto;
+    margin-top: 3px;
+    padding: 10px 8px;
+    display: flex;
+    justify-content: flex-start;
+    gap: 10px;
+    color: var(--muted);
+    background: transparent;
+    border: 0;
+    border-radius: 7px;
+    font-size: 14px;
+    font-weight: 550;
+  }
+  .navbar nav .theme-toggle:hover {
+    color: var(--accent-dark);
+    background: var(--accent-soft);
+    transform: none;
+  }
+  .theme-toggle__label { display: inline; }
   .nav-link {
     padding: 10px 8px;
     border-radius: 7px;
