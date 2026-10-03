@@ -253,8 +253,8 @@ export default function CompaniesTable() {
                   ? Array.from({ length: 8 }, (_, index) => (
                     <tr className="company-row-skeleton" key={index}>
                       <td><span /></td>
-                      <td><span /></td>
-                      <td><span /></td>
+                      <td className="company-table-symbol-cell"><span /></td>
+                      <td className="company-table-isin-cell"><span /></td>
                       <td><span /></td>
                     </tr>
                   ))
@@ -267,9 +267,18 @@ export default function CompaniesTable() {
                         >
                           {company["Company Name"]}
                         </Link>
+                        <span className="company-table-mobile-meta">
+                          <span>{company.Symbol}</span>
+                          <span aria-hidden="true">•</span>
+                          <span>{company["ISIN Code"]}</span>
+                        </span>
                       </td>
-                      <td><span className="company-table-symbol">{company.Symbol}</span></td>
-                      <td><span className="company-table-isin">{company["ISIN Code"]}</span></td>
+                      <td className="company-table-symbol-cell">
+                        <span className="company-table-symbol">{company.Symbol}</span>
+                      </td>
+                      <td className="company-table-isin-cell">
+                        <span className="company-table-isin">{company["ISIN Code"]}</span>
+                      </td>
                       <td>
                         <Link
                           aria-label={`View ${company["Company Name"]}`}

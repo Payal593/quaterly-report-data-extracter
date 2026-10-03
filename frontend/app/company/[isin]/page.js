@@ -4,9 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import FinancialTable from "@/components/FinancialTable";
+import CompanyAboutNews from "@/components/CompanyAboutNews";
 import MetricCard from "@/components/MetricCard";
 import Navbar from "@/components/Navbar";
 import PriceHistoryChart from "@/components/PriceHistoryChart";
+import ProfitLossTrendChart from "@/components/ProfitLossTrendChart";
+import ShareholdingPattern from "@/components/ShareholdingPattern";
+import {
+  loadCompanyData,
+  readCompanyDataCache,
+} from "@/lib/companyDataCache";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
@@ -77,38 +84,32 @@ function formatIncomeValue(metric, unit) {
 export default function CompanyPage() {
   const params = useParams();
   const isin = Array.isArray(params.isin) ? params.isin[0] : params.isin;
-  const [companyData, setCompanyData] = useState(null);
+  const [companyData, setCompanyData] = useState(() =>
+    readCompanyDataCache(isin),
+  );
   const [companyName, setCompanyName] = useState("");
   const [companyDirectory, setCompanyDirectory] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => !readCompanyDataCache(isin));
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!isin) return;
 
     const controller = new AbortController();
+    let disposed = false;
 
     async function fetchCompanyData() {
       try {
-        setIsLoading(true);
+        const cachedCompanyData = readCompanyDataCache(isin);
+        setIsLoading(!cachedCompanyData);
         setError("");
 
         let directoryCompanies = readCachedCompanies();
         let selectedCompany = directoryCompanies.find(
           (company) => company["ISIN Code"] === isin,
         );
-        const financialResponse = await fetch(
-          `${API_BASE_URL}/get-data/${encodeURIComponent(isin)}`,
-          { signal: controller.signal },
-        );
-
-        if (!financialResponse.ok) {
-          throw new Error(
-            `Company data request failed with ${financialResponse.status}`,
-          );
-        }
-
-        const data = await financialResponse.json();
+        const data = cachedCompanyData || await loadCompanyData(isin);
+        if (disposed) return;
 
         if (directoryCompanies.length === 0 || !selectedCompany) {
           try {
@@ -134,21 +135,26 @@ export default function CompanyPage() {
         }
 
         console.log("Company financial data:", data);
+        if (disposed) return;
+
         setCompanyData(data);
         setCompanyName(selectedCompany?.["Company Name"] || "");
         setCompanyDirectory(directoryCompanies);
       } catch (fetchError) {
-        if (fetchError.name === "AbortError") return;
+        if (disposed || fetchError.name === "AbortError") return;
 
         console.error("Unable to fetch company financial data:", fetchError);
         setError("Unable to load company data. Please try again.");
       } finally {
-        if (!controller.signal.aborted) setIsLoading(false);
+        if (!disposed) setIsLoading(false);
       }
     }
 
     fetchCompanyData();
-    return () => controller.abort();
+    return () => {
+      disposed = true;
+      controller.abort();
+    };
   }, [isin]);
 
   const metrics = useMemo(() => {
@@ -219,6 +225,11 @@ export default function CompanyPage() {
     Array.isArray(companyData.competitors.data)
       ? companyData.competitors.data
       : [];
+  const shareholdings =
+    companyData?.share_holdings?.status === "success" &&
+    Array.isArray(companyData.share_holdings.data)
+      ? companyData.share_holdings.data
+      : [];
   const directoryByIsin = useMemo(
     () =>
       new Map(
@@ -265,12 +276,29 @@ export default function CompanyPage() {
         {!isLoading && !error && companyData && (
           <>
             <header className="company-header">
-              <p className="company-header__eyebrow">Company fundamentals</p>
+              {companyData.profile?.status === "success" &&
+                companyData.profile.data?.sector && (
+                  <div className="company-sector-row">
+                    <span className="sector-badge">
+                      {companyData.profile.data.sector}
+                    </span>
+                  </div>
+                )}
               <h1>{displayedName}</h1>
               <div className="company-identity">
                 {symbol && <span className="company-symbol">{symbol}</span>}
+                <span aria-hidden="true">•</span>
                 <span>{companyData.isin || isin}</span>
               </div>
+              <CompanyAboutNews
+                about={
+                  companyData.profile?.status === "success"
+                    ? companyData.profile.data?.company_profile
+                    : ""
+                }
+                companyName={displayedName}
+                key={isin}
+              />
             </header>
 
             <nav className="company-section-nav" aria-label="Company data sections">
@@ -282,6 +310,7 @@ export default function CompanyPage() {
                 </a>
               ))}
               {ratios.length > 0 && <a href="#ratios">Ratios</a>}
+              {shareholdings.length > 0 && <a href="#shareholding">Shareholding</a>}
               {competitors.length > 0 && <a href="#peer-comparison">Peer Comparison</a>}
             </nav>
 
@@ -295,12 +324,6 @@ export default function CompanyPage() {
                   <p className="section-kicker">At a glance</p>
                   <h2 id="overview-title">Overview / Key Metrics</h2>
                 </div>
-                {companyData.profile?.status === "success" &&
-                  companyData.profile.data?.sector && (
-                    <span className="sector-badge">
-                      {companyData.profile.data.sector}
-                    </span>
-                  )}
               </div>
 
               {metrics.length > 0 ? (
@@ -350,6 +373,12 @@ export default function CompanyPage() {
                     <span>{formatStatementUnit(section.data.units_in)}</span>
                   </div>
                 </div>
+                {id === "profit-loss" && (
+                  <ProfitLossTrendChart
+                    rows={section.data.full_statement}
+                    unit={section.data.units_in}
+                  />
+                )}
                 <FinancialTable
                   label={`${displayedName} ${title}`}
                   rows={section.data.full_statement}
@@ -394,6 +423,22 @@ export default function CompanyPage() {
                     </tbody>
                   </table>
                 </div>
+              </section>
+            )}
+
+            {shareholdings.length > 0 && (
+              <section
+                className="financial-section company-data-section"
+                id="shareholding"
+                aria-labelledby="shareholding-title"
+              >
+                <div className="financial-section__heading">
+                  <div>
+                    <p className="section-kicker">Ownership structure</p>
+                    <h2 id="shareholding-title">Shareholding Pattern</h2>
+                  </div>
+                </div>
+                <ShareholdingPattern data={shareholdings} />
               </section>
             )}
 

@@ -1,6 +1,7 @@
 import CompanySearch from "@/components/CompanySearch";
 import Navbar from "@/components/Navbar";
 import PopularCompanies from "@/components/PopularCompanies";
+import ResearchHighlights from "@/components/ResearchHighlights";
 
 export default function Home() {
   return (
@@ -26,6 +27,7 @@ export default function Home() {
         </div>
       </section>
 
+      <ResearchHighlights />
       <PopularCompanies />
     </main>
   );

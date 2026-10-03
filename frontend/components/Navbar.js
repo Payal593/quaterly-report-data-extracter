@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import CompanySearch from "@/components/CompanySearch";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const navItems = [
   { href: "/", label: "Home" },
@@ -76,6 +77,8 @@ export default function Navbar({ showSearch = false }) {
             );
           })}
         </nav>
+
+        <ThemeToggle />
       </div>
     </header>
   );

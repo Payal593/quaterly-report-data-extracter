@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import {
   Bar,
   CartesianGrid,
@@ -163,6 +163,22 @@ const SERIES_OPTIONS = [
   { key: "volume", label: "Volume" },
 ];
 
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+
+function subscribeToReducedMotion(callback) {
+  const mediaQuery = window.matchMedia(REDUCED_MOTION_QUERY);
+  mediaQuery.addEventListener("change", callback);
+  return () => mediaQuery.removeEventListener("change", callback);
+}
+
+function getReducedMotionPreference() {
+  return window.matchMedia(REDUCED_MOTION_QUERY).matches;
+}
+
+function getServerReducedMotionPreference() {
+  return false;
+}
+
 export default function PriceHistoryChart({ dailyData }) {
   const [selectedRange, setSelectedRange] = useState("1Y");
   const [enabledSeries, setEnabledSeries] = useState({
@@ -171,6 +187,12 @@ export default function PriceHistoryChart({ dailyData }) {
     dma200: false,
     volume: true,
   });
+  const prefersReducedMotion = useSyncExternalStore(
+    subscribeToReducedMotion,
+    getReducedMotionPreference,
+    getServerReducedMotionPreference,
+  );
+  const shouldAnimate = !prefersReducedMotion;
 
   const normalizedData = useMemo(
     () => normalizeDailyData(Array.isArray(dailyData) ? dailyData : []),
@@ -223,7 +245,7 @@ export default function PriceHistoryChart({ dailyData }) {
             data={visibleData}
             margin={{ top: 12, right: 4, bottom: 2, left: 4 }}
           >
-            <CartesianGrid stroke="#e8edf3" vertical={false} />
+            <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
             <XAxis
               dataKey="timestamp"
               domain={["dataMin", "dataMax"]}
@@ -260,24 +282,29 @@ export default function PriceHistoryChart({ dailyData }) {
             />
             <Tooltip
               content={<ChartTooltip enabledSeries={enabledSeries} />}
-              cursor={{ stroke: "#b8c4d4", strokeDasharray: "3 3" }}
+              cursor={{ stroke: "var(--chart-cursor)", strokeDasharray: "3 3" }}
             />
             {enabledSeries.volume && (
               <Bar
+                animationDuration={500}
+                animationEasing="ease-out"
                 dataKey="volume"
-                fill="#cfe0fb"
-                isAnimationActive={false}
+                fill="var(--chart-volume)"
+                isAnimationActive={shouldAnimate}
                 maxBarSize={8}
                 yAxisId="volume"
               />
             )}
             {enabledSeries.price && (
               <Line
+                animationBegin={40}
+                animationDuration={650}
+                animationEasing="ease-out"
                 connectNulls={false}
                 dataKey="price"
                 dot={false}
-                isAnimationActive={false}
-                stroke="#2563eb"
+                isAnimationActive={shouldAnimate}
+                stroke="var(--accent)"
                 strokeWidth={2.25}
                 type="monotone"
                 yAxisId="price"
@@ -285,11 +312,14 @@ export default function PriceHistoryChart({ dailyData }) {
             )}
             {enabledSeries.dma50 && (
               <Line
+                animationBegin={70}
+                animationDuration={650}
+                animationEasing="ease-out"
                 connectNulls={false}
                 dataKey="dma50"
                 dot={false}
-                isAnimationActive={false}
-                stroke="#d69024"
+                isAnimationActive={shouldAnimate}
+                stroke="var(--chart-dma-50)"
                 strokeWidth={1.75}
                 type="monotone"
                 yAxisId="price"
@@ -297,11 +327,14 @@ export default function PriceHistoryChart({ dailyData }) {
             )}
             {enabledSeries.dma200 && (
               <Line
+                animationBegin={100}
+                animationDuration={650}
+                animationEasing="ease-out"
                 connectNulls={false}
                 dataKey="dma200"
                 dot={false}
-                isAnimationActive={false}
-                stroke="#65748b"
+                isAnimationActive={shouldAnimate}
+                stroke="var(--chart-dma-200)"
                 strokeWidth={1.75}
                 type="monotone"
                 yAxisId="price"
