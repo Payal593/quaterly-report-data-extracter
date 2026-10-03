@@ -1878,12 +1878,12 @@ h1 {
   .price-chart-ranges button,
   .series-toggle input { transition: none; animation: none; }
 }
-  .nav-link:hover, .nav-link--active { background: var(--accent-soft); }
+  .nav-link:hover, .nav-link--active { background: var(--accent-soft); border-bottom: none; }
   .nav-link--active { color: var(--accent-dark); }
   .nav-link--active::after { display: none; }
   .brand { font-size: 18px; }
   .brand__mark { width: 29px; height: 29px; }
-  .hero { min-height: calc(100vh - 68px); padding: 92px 18px 72px; }
+  .hero { padding: 20px 18px 25px; }
   h1 { font-size: clamp(38px, 12vw, 50px); letter-spacing: -2px; }
   .hero__subtitle { margin-bottom: 34px; }
   .search-box { height: 62px; padding-left: 18px; border-radius: 14px; }
